@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-{{NONCE}}';">
+  <title>DiffWise - Code Diff Review</title>
+  <style>
+    /* ===== CSS Variables (VS Code Theme Integration) ===== */
+    :root {
+      --bg-primary: var(--vscode-editor-background, #1e1e1e);
+      --bg-secondary: var(--vscode-sideBar-background, #252526);
+      --bg-tertiary: var(--vscode-input-background, #3c3c3c);
+      --text-primary: var(--vscode-editor-foreground, #cccccc);
+      --text-secondary: var(--vscode-descriptionForeground, #858585);
+      --border-color: var(--vscode-panel-border, #444);
+      --accent: var(--vscode-button-background, #0e639c);
+      --accent-hover: var(--vscode-button-hoverBackground, #1177bb);
+      --green: #4ec9b0;
+      --green-bg: rgba(78, 201, 176, 0.1);
+      --red: #f44747;
+      --red-bg: rgba(244, 71, 71, 0.1);
+      --yellow: #dcdcaa;
+      --font-mono: var(--vscode-editor-font-family, 'Consolas', 'Courier New', monospace);
+      --font-ui: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-ui);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* ===== Header ===== */
+    .header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header h1 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header h1 .logo {
+      font-size: 16px;
+    }
+
+    /* ===== Stats Bar ===== */
+    .stats-bar {
+      display: flex;
+      gap: 12px;
+      padding: 8px 16px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      font-size: 11px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .stat .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .stat .dot.pending { background: var(--yellow); }
+    .stat .dot.accepted { background: var(--green); }
+    .stat .dot.rejected { background: var(--red); }
+
+    .stat-label { color: var(--text-secondary); }
+    .stat-value { font-weight: 600; }
+
+    /* ===== Actions Bar ===== */
+    .actions-bar {
+      display: flex;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 4px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 11px;
+      font-family: var(--font-ui);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .btn.accept { border-color: var(--green); color: var(--green); }
+    .btn.accept:hover { background: var(--green); color: #fff; }
+    .btn.reject { border-color: var(--red); color: var(--red); }
+    .btn.reject:hover { background: var(--red); color: #fff; }
+
+    /* ===== File List ===== */
+    .file-list {
+      padding: 8px 0;
+    }
+
+    .file-item {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .file-header {
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+      cursor: pointer;
+      gap: 8px;
+      transition: background 0.1s;
+    }
+
+    .file-header:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .file-path {
+      flex: 1;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-status {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .file-status.pending { background: rgba(220, 220, 170, 0.15); color: var(--yellow); }
+    .file-status.accepted { background: var(--green-bg); color: var(--green); }
+    .file-status.rejected { background: var(--red-bg); color: var(--red); }
+
+    .file-stats {
+      font-size: 11px;
+      color: var(--text-secondary);
+      display: flex;
+      gap: 8px;
+    }
+
+    .file-stats .add { color: var(--green); }
+    .file-stats .del { color: var(--red); }
+
+    .file-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .file-actions .btn {
+      padding: 2px 8px;
+      font-size: 10px;
+    }
+
+    .chevron {
+      transition: transform 0.2s;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .chevron.expanded {
+      transform: rotate(90deg);
+    }
+
+    /* ===== Diff Content ===== */
+    .diff-content {
+      display: none;
+      background: var(--bg-primary);
+    }
+
+    .diff-content.expanded {
+      display: block;
+    }
+
+    .diff-line {
+      display: flex;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .diff-line.added {
+      background: var(--green-bg);
+    }
+
+    .diff-line.removed {
+      background: var(--red-bg);
+    }
+
+    .diff-line.context {
+      opacity: 0.6;
+    }
+
+    .line-number {
+      width: 45px;
+      min-width: 45px;
+      text-align: right;
+      padding: 0 8px;
+      color: var(--text-secondary);
+      user-select: none;
+      font-size: 11px;
+    }
+
+    .line-number.new {
+      border-left: 1px solid var(--border-color);
+    }
+
+    .line-content {
+      flex: 1;
+      padding: 0 8px;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    .hunk-header {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+
+    /* ===== Empty State ===== */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+
+    .empty-state h3 {
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .empty-state p {
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
+
+    .empty-state .btn {
+      margin: 0 auto;
+      padding: 6px 16px;
+    }
+
+    /* ===== Scrollbar ===== */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+    /* ===== Toast Notification ===== */
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      z-index: 100;
+      transition: transform 0.3s ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 400px) {
+      .stats-bar { gap: 8px; }
+      .file-stats { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1><span class="logo">🔍</span> DiffWise Review</h1>
+  </div>
+
+  <div class="stats-bar" id="statsBar">
+    <div class="stat"><span class="dot pending"></span><span class="stat-label">Pending:</span><span class="stat-value" id="statPending">0</span></div>
+    <div class="stat"><span class="dot accepted"></span><span class="stat-label">Accepted:</span><span class="stat-value" id="statAccepted">0</span></div>
+    <div class="stat"><span class="dot rejected"></span><span class="stat-label">Rejected:</span><span class="stat-value" id="statRejected">0</span></div>
+    <div class="stat"><span class="stat-label">+<span class="stat-value" id="statAdditions">0</span></span></div>
+    <div class="stat"><span class="stat-label">-<span class="stat-value" id="statDeletions">0</span></span></div>
+  </div>
+
+  <div class="actions-bar" id="actionsBar">
+    <button class="btn accept" onclick="acceptAll()">✓ Accept All</button>
+    <button class="btn reject" onclick="rejectAll()">✗ Reject All</button>
+    <button class="btn" onclick="expandAll()"> Expand All</button>
+    <button class="btn" onclick="collapseAll()"> Collapse All</button>
+  </div>
+
+  <div class="file-list" id="fileList">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">📋</div>
+      <h3>No diffs to review</h3>
+      <p>Paste a unified diff or import from clipboard to get started.</p>
+      <button class="btn" onclick="importFromClipboard()">📋 Import from Clipboard</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script nonce="{{NONCE}}">
+    const vscode = acquireVsCodeApi();
+    let expandedFiles = new Set();
+
+    // Handle messages from extension
+    window.addEventListener('message', event => {
+      const message = event.data;
+      switch (message.type) {
+        case 'update':
+          renderDiffs(message.files);
+          updateStats(message.stats);
+          break;
+        case 'toast':
+          showToast(message.text);
+          break;
+      }
+    });
+
+    function renderDiffs(files) {
+      const fileList = document.getElementById('fileList');
+      const emptyState = document.getElementById('emptyState');
+
+      if (!files || files.length === 0) {
+        fileList.innerHTML = '';
+        fileList.appendChild(createEmptyState());
+        return;
+      }
+
+      fileList.innerHTML = files.map(file => renderFileItem(file)).join('');
+    }
+
+    function createEmptyState() {
+      const div = document.createElement('div');
+      div.className = 'empty-state';
+      div.id = 'emptyState';
+      div.innerHTML = \`
+        <div class="icon">📋</div>
+        <h3>No diffs to review</h3>
+        <p>Paste a unified diff or import from clipboard to get started.</p>
+        <button class="btn" onclick="importFromClipboard()">📋 Import from Clipboard</button>
+      \`;
+      return div;
+    }
+
+    function renderFileItem(file) {
+      const isExpanded = expandedFiles.has(file.id);
+      const displayName = file.newPath === '/dev/null' ? file.oldPath : file.newPath;
+
+      let html = \`
+        <div class="file-item" data-id="\${file.id}">
+          <div class="file-header" onclick="toggleFile('\${file.id}')">
+            <span class="chevron \${isExpanded ? 'expanded' : ''}">▶</span>
+            <span class="file-path" title="\${displayName}">\${displayName}</span>
+            <span class="file-status \${file.status}">\${file.status}</span>
+            <span class="file-stats">
+              <span class="add">+\${file.stats.additions}</span>
+              <span class="del">-\${file.stats.deletions}</span>
+            </span>
+            <div class="file-actions" onclick="event.stopPropagation()">
+              <button class="btn accept" onclick="acceptFile('\${file.id}')">✓</button>
+              <button class="btn reject" onclick="rejectFile('\${file.id}')">✗</button>
+            </div>
+          </div>
+          <div class="diff-content \${isExpanded ? 'expanded' : ''}" id="diff-\${file.id}">
+      \`;
+
+      for (const hunk of file.hunks) {
+        html += \`<div class="diff-line hunk-header"><span class="line-content">@@ -\${hunk.oldStart},\${hunk.oldLines} +\${hunk.newStart},\${hunk.newLines} @@</span></div>\`;
+
+        for (const line of hunk.lines) {
+          const oldNum = line.oldLineNumber || '';
+          const newNum = line.newLineNumber || '';
+          html += \`
+            <div class="diff-line \${line.type}">
+              <span class="line-number">\${oldNum}</span>
+              <span class="line-number new">\${newNum}</span>
+              <span class="line-content">\${escapeHtml(line.content)}</span>
+            </div>
+          \`;
+        }
+      }
+
+      html += '</div></div>';
+      return html;
+    }
+
+    function toggleFile(fileId) {
+      if (expandedFiles.has(fileId)) {
+        expandedFiles.delete(fileId);
+      } else {
+        expandedFiles.add(fileId);
+      }
+      vscode.postMessage({ type: 'toggleExpand', fileId });
+      // Toggle UI directly for instant feedback
+      const diffContent = document.getElementById('diff-' + fileId);
+      if (diffContent) {
+        diffContent.classList.toggle('expanded');
+      }
+      const chevron = document.querySelector(\`.file-item[data-id="\${fileId}"] .chevron\`);
+      if (chevron) {
+        chevron.classList.toggle('expanded');
+      }
+    }
+
+    function acceptFile(fileId) {
+      vscode.postMessage({ type: 'acceptFile', fileId });
+      showToast('File accepted');
+    }
+
+    function rejectFile(fileId) {
+      vscode.postMessage({ type: 'rejectFile', fileId });
+      showToast('File rejected');
+    }
+
+    function acceptAll() {
+      vscode.postMessage({ type: 'acceptAll' });
+      showToast('All changes accepted');
+    }
+
+    function rejectAll() {
+      vscode.postMessage({ type: 'rejectAll' });
+      showToast('All changes rejected');
+    }
+
+    function expandAll() {
+      const items = document.querySelectorAll('.file-item');
+      items.forEach(item => {
+        const id = item.dataset.id;
+        expandedFiles.add(id);
+        const diff = document.getElementById('diff-' + id);
+        if (diff) diff.classList.add('expanded');
+        const chevron = item.querySelector('.chevron');
+        if (chevron) chevron.classList.add('expanded');
+      });
+    }
+
+    function collapseAll() {
+      expandedFiles.clear();
+      const items = document.querySelectorAll('.file-item');
+      items.forEach(item => {
+        const id = item.dataset.id;
+        const diff = document.getElementById('diff-' + id);
+        if (diff) diff.classList.remove('expanded');
+        const chevron = item.querySelector('.chevron');
+        if (chevron) chevron.classList.remove('expanded');
+      });
+    }
+
+    function importFromClipboard() {
+      vscode.postMessage({ type: 'importFromClipboard' });
+    }
+
+    function updateStats(stats) {
+      if (!stats) return;
+      document.getElementById('statPending').textContent = stats.pending;
+      document.getElementById('statAccepted').textContent = stats.accepted;
+      document.getElementById('statRejected').textContent = stats.rejected;
+      document.getElementById('statAdditions').textContent = stats.additions;
+      document.getElementById('statDeletions').textContent = stats.deletions;
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById('toast');
+      toast.textContent = text;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

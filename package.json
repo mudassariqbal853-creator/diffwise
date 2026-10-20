@@ -1,0 +1,78 @@
+{
+  "name": "diffwise",
+  "displayName": "DiffWise - AI Code Diff Reviewer",
+  "description": "Visual diff review panel for AI coding agents. Accept/reject changes at file, hunk, and line level. Auto-detect file saves, side-by-side view, search, risk scoring, undo/redo, apply to disk, and more.",
+  "version": "0.5.0",
+  "publisher": "diffwise",
+  "icon": "media/diffwise-icon-128.png",
+  "engines": { "vscode": "^1.90.0" },
+  "categories": ["Other", "SCM Providers", "Visualization"],
+  "activationEvents": [
+    "onView:diffwise.sidebar",
+    "onCommand:diffwise.openPanel",
+    "onCommand:diffwise.applyChanges",
+    "onCommand:diffwise.exportPatch"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [{ "id": "diffwise", "title": "DiffWise", "icon": "media/activity-icon.svg" }]
+    },
+    "views": {
+      "diffwise": [{ "type": "webview", "id": "diffwise.sidebar", "name": "Diff Review" }]
+    },
+    "commands": [
+      { "command": "diffwise.openPanel", "title": "DiffWise: Open Panel" },
+      { "command": "diffwise.refresh", "title": "DiffWise: Refresh", "icon": "$(refresh)" },
+      { "command": "diffwise.acceptAll", "title": "DiffWise: Accept All", "icon": "$(check)" },
+      { "command": "diffwise.rejectAll", "title": "DiffWise: Reject All", "icon": "$(trash)" },
+      { "command": "diffwise.applyChanges", "title": "DiffWise: Apply Accepted Changes to Disk", "icon": "$(pencil)" },
+      { "command": "diffwise.revertRejected", "title": "DiffWise: Revert Rejected Files", "icon": "$(discard)" },
+      { "command": "diffwise.undo", "title": "DiffWise: Undo", "icon": "$(undo)" },
+      { "command": "diffwise.redo", "title": "DiffWise: Redo", "icon": "$(redo)" },
+      { "command": "diffwise.clearAll", "title": "DiffWise: Clear All", "icon": "$(clear-all)" },
+      { "command": "diffwise.importFromClipboard", "title": "DiffWise: Import from Clipboard", "icon": "$(clippy)" },
+      { "command": "diffwise.importFromFile", "title": "DiffWise: Import from File", "icon": "$(file-code)" },
+      { "command": "diffwise.importSelection", "title": "DiffWise: Import Selection", "icon": "$(selection)" },
+      { "command": "diffwise.importGitDiff", "title": "DiffWise: Import Git Diff (Unstaged)", "icon": "$(git-commit)" },
+      { "command": "diffwise.importFullGitDiff", "title": "DiffWise: Import Full Git Diff (All Changes)", "icon": "$(git-merge)" },
+      { "command": "diffwise.exportPatch", "title": "DiffWise: Export as Patch", "icon": "$(export)" },
+      { "command": "diffwise.search", "title": "DiffWise: Search in Diffs", "icon": "$(search)" },
+      { "command": "diffwise.filterByRisk", "title": "DiffWise: Filter by Risk", "icon": "$(shield)" },
+      { "command": "diffwise.toggleWatcher", "title": "DiffWise: Toggle Auto File Watcher", "icon": "$(eye)" }
+    ],
+    "menus": {
+      "view/title": [
+        { "command": "diffwise.refresh", "when": "view == diffwise.sidebar", "group": "navigation" },
+        { "command": "diffwise.acceptAll", "when": "view == diffwise.sidebar", "group": "navigation" },
+        { "command": "diffwise.rejectAll", "when": "view == diffwise.sidebar", "group": "navigation" },
+        { "command": "diffwise.applyChanges", "when": "view == diffwise.sidebar", "group": "navigation" },
+        { "command": "diffwise.importFromClipboard", "when": "view == diffwise.sidebar", "group": "navigation" },
+        { "command": "diffwise.importGitDiff", "when": "view == diffwise.sidebar", "group": "navigation" },
+        { "command": "diffwise.importFullGitDiff", "when": "view == diffwise.sidebar", "group": "navigation" },
+        { "command": "diffwise.toggleWatcher", "when": "view == diffwise.sidebar", "group": "navigation" },
+        { "command": "diffwise.exportPatch", "when": "view == diffwise.sidebar", "group": "navigation" }
+      ],
+      "editor/context": [
+        { "command": "diffwise.importSelection", "group": "diffwise" }
+      ]
+    },
+    "keybindings": [
+      { "command": "diffwise.openPanel", "key": "ctrl+shift+d", "mac": "cmd+shift+d" },
+      { "command": "diffwise.undo", "key": "ctrl+z", "mac": "cmd+z", "when": "diffwise.panelActive" },
+      { "command": "diffwise.redo", "key": "ctrl+y", "mac": "cmd+y", "when": "diffwise.panelActive" },
+      { "command": "diffwise.search", "key": "ctrl+shift+f", "mac": "cmd+shift+f", "when": "diffwise.panelActive" }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  }
+}
