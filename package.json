@@ -1,10 +1,18 @@
 {
-  "name": "diffwise",
+  "name": "diffwise-ai",
   "displayName": "DiffWise - AI Code Diff Reviewer",
   "description": "Visual diff review panel for AI coding agents. Accept/reject changes at file, hunk, and line level. Auto-detect file saves, side-by-side view, search, risk scoring, undo/redo, apply to disk, and more.",
   "version": "0.5.0",
   "publisher": "diffwise",
   "icon": "media/diffwise-icon-128.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mudassariqbal853-creator/diffwise.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mudassariqbal853-creator/diffwise/issues"
+  },
+  "homepage": "https://github.com/mudassariqbal853-creator/diffwise#readme",
   "engines": { "vscode": "^1.90.0" },
   "categories": ["Other", "SCM Providers", "Visualization"],
   "activationEvents": [
