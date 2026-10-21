@@ -159,13 +159,13 @@ DiffWise automatically scores each file's risk level:
 ## 📸 Screenshots
 
 ### Review Panel
-![Review Panel](https://raw.githubusercontent.com/mudassariqbal853-creator/diffwise/main/media/screenshot-1.png)
+![Review Panel](https://raw.githubusercontent.com/mudassariqbal853-creator/diffwise/master/media/screenshot-1.png)
 
 ### Side-by-Side View
-![Side-by-Side](https://raw.githubusercontent.com/mudassariqbal853-creator/diffwise/main/media/screenshot-2.png)
+![Side-by-Side](https://raw.githubusercontent.com/mudassariqbal853-creator/diffwise/master/media/screenshot-2.png)
 
 ### Statistics Dashboard
-![Statistics](https://raw.githubusercontent.com/mudassariqbal853-creator/diffwise/main/media/screenshot-3.png)
+![Statistics](https://raw.githubusercontent.com/mudassariqbal853-creator/diffwise/master/media/screenshot-3.png)
 
 ---
 
